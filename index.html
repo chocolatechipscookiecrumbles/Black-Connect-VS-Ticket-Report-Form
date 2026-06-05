@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Issue Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f4f3ef;
+    --surface:  #ffffff;
+    --border:   #dddbd4;
+    --text:     #1a1a18;
+    --muted:    #6b6960;
+    --pass-bg:  #e8f5ec;
+    --pass-bdr: #4caf76;
+    --pass-txt: #1a5c32;
+    --fail-bg:  #fdecea;
+    --fail-bdr: #e05252;
+    --fail-txt: #7a1c1c;
+    --accent:   #1a1a18;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  .page {
+    max-width: 740px;
+    margin: 0 auto;
+  }
+
+  header {
+    border-bottom: 1.5px solid var(--text);
+    padding-bottom: 20px;
+    margin-bottom: 36px;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .ticket-badge {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: var(--bg);
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 480px) { .meta-grid { grid-template-columns: 1fr; } }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  input[type=text], input[type=date], select {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input[type=text]:focus, input[type=date]:focus, select:focus {
+    border-color: var(--text);
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    background: var(--surface);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  thead th {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  thead th:nth-child(1) { width: 35%; }
+  thead th:nth-child(2) { width: 20%; text-align: center; }
+  thead th:nth-child(3) { width: 38%; }
+  thead th:nth-child(4) { width: 7%; }
+
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr.pass-row { background: var(--pass-bg); }
+  tbody tr.fail-row { background: var(--fail-bg); }
+
+  tbody td { padding: 8px 10px; vertical-align: top; }
+
+  tbody td input[type=text], tbody td textarea {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 5px 7px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    resize: none;
+    min-height: 34px;
+    overflow: hidden;
+  }
+
+  tbody td input[type=text]:focus, tbody td textarea:focus {
+    border-color: var(--border);
+    background: var(--surface);
+  }
+
+  .pf-wrap { display: flex; justify-content: center; padding-top: 5px; }
+
+  .pf-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .pf-toggle button {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    padding: 5px 11px;
+    cursor: pointer;
+    color: var(--muted);
+    transition: background 0.12s, color 0.12s;
+    letter-spacing: 0.04em;
+  }
+
+  .pf-toggle button.active-pass {
+    background: var(--pass-bdr);
+    color: #fff;
+  }
+
+  .pf-toggle button.active-fail {
+    background: var(--fail-bdr);
+    color: #fff;
+  }
+
+  .del-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--border);
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 6px;
+    transition: color 0.15s;
+    display: block;
+    margin: 3px auto 0;
+  }
+
+  .del-btn:hover { color: var(--fail-bdr); }
+
+  .add-row-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 9px 0;
+    width: 100%;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: border-color 0.15s, color 0.15s;
+    margin-bottom: 32px;
+  }
+
+  .add-row-btn:hover { border-color: var(--text); color: var(--text); }
+
+  .summary-bar {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .stat-val.pass { color: var(--pass-bdr); }
+  .stat-val.fail { color: var(--fail-bdr); }
+  .stat-val.total { color: var(--text); }
+
+  .stat-lbl {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 11px 24px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+  }
+
+  .btn-primary:hover { opacity: 0.82; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 18px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .btn-secondary:hover { border-color: var(--text); color: var(--text); }
+
+  .status-msg {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 9px 14px;
+    border-radius: 6px;
+    display: none;
+    letter-spacing: 0.02em;
+  }
+
+  .status-msg.success {
+    background: var(--pass-bg);
+    color: var(--pass-txt);
+    border: 1px solid var(--pass-bdr);
+    display: block;
+  }
+
+  .status-msg.error {
+    background: var(--fail-bg);
+    color: var(--fail-txt);
+    border: 1px solid var(--fail-bdr);
+    display: block;
+  }
+
+  .setup-notice {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: #fffbe6;
+    border: 1px solid #e6c44a;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 28px;
+    line-height: 1.7;
+  }
+
+  .setup-notice strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="header-row">
+      <h1>Issue report</h1>
+      <span class="ticket-badge" id="ticket-display">TICK-????</span>
+    </div>
+  </header>
+
+  <!-- ⚠️ Remove this block once you've configured the Apps Script URL below -->
+  <div class="setup-notice" id="setup-notice">
+    <strong>Setup required:</strong> Open this file, find <code>APPS_SCRIPT_URL</code> near the bottom,
+    and replace it with your deployed Apps Script Web App URL.
+    See <code>apps-script.gs</code> for the server-side code.
+  </div>
+
+  <div class="meta-grid">
+    <div class="field">
+      <label>Ticket ID</label>
+      <input type="text" id="ticket-id" placeholder="e.g. TICK-0042" oninput="updateBadge(this.value)">
+    </div>
+    <div class="field">
+      <label>Tester name</label>
+      <input type="text" id="tester-name" placeholder="Your name">
+    </div>
+    <div class="field">
+      <label>Module / feature area</label>
+      <input type="text" id="module-name" placeholder="e.g. Upload, Auth, Checkout">
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="test-date">
+    </div>
+  </div>
+
+  <div class="section-label">Feature test results</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th style="text-align:center">Pass / Fail</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <button class="add-row-btn" onclick="addRow()">+ Add feature row</button>
+
+  <div class="section-label">Summary</div>
+  <div class="summary-bar">
+    <div class="stat"><span class="stat-val pass" id="s-pass">0</span><span class="stat-lbl">Pass</span></div>
+    <div class="stat"><span class="stat-val fail" id="s-fail">0</span><span class="stat-lbl">Fail</span></div>
+    <div class="stat"><span class="stat-val total" id="s-total">0</span><span class="stat-lbl">Total</span></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" id="submit-btn" onclick="submitReport()">Submit to Sheets</button>
+    <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+    <div class="status-msg" id="status-msg"></div>
+  </div>
+
+</div>
+
+<script>
+  // ─── CONFIG ──────────────────────────────────────────────────────────────────
+  // Replace this with your deployed Google Apps Script Web App URL.
+  // See apps-script.gs for setup instructions.
+  const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+  // Optional: set a secret token that matches the one in your Apps Script.
+  // If you don't use a token, set this to '' and remove the check in apps-script.gs.
+  const SECRET_TOKEN = 'YOUR_SECRET_TOKEN_HERE';
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  let rows = [];
+  let nextId = 1;
+
+  document.getElementById('test-date').value = new Date().toISOString().slice(0, 10);
+
+  if (APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+    document.getElementById('setup-notice').remove();
+  }
+
+  function updateBadge(val) {
+    document.getElementById('ticket-display').textContent = val.trim() || 'TICK-????';
+  }
+
+  function addRow(feature = '', status = null, notes = '') {
+    rows.push({ id: nextId++, feature, status, notes });
+    renderRows();
+  }
+
+  function removeRow(id) {
+    rows = rows.filter(r => r.id !== id);
+    renderRows();
+  }
+
+  function setStatus(id, val) {
+    const r = rows.find(r => r.id === id);
+    if (r) r.status = r.status === val ? null : val;
+    renderRows();
+  }
+
+  function syncField(id, field, val) {
+    const r = rows.find(r => r.id === id);
+    if (r) r[field] = val;
+    updateSummary();
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.max(34, el.scrollHeight) + 'px';
+  }
+
+  function renderRows() {
+    const tbody = document.getElementById('rows');
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      if (r.status === 'pass') tr.className = 'pass-row';
+      else if (r.status === 'fail') tr.className = 'fail-row';
+
+      tr.innerHTML = `
+        <td><input type="text" value="${esc(r.feature)}" placeholder="Feature name"
+          oninput="syncField(${r.id},'feature',this.value)"></td>
+        <td>
+          <div class="pf-wrap">
+            <div class="pf-toggle">
+              <button class="${r.status === 'pass' ? 'active-pass' : ''}"
+                onclick="setStatus(${r.id},'pass')">PASS</button>
+              <button class="${r.status === 'fail' ? 'active-fail' : ''}"
+                onclick="setStatus(${r.id},'fail')">FAIL</button>
+            </div>
+          </div>
+        </td>
+        <td><textarea placeholder="Notes…"
+          oninput="syncField(${r.id},'notes',this.value);autoResize(this)"
+          >${esc(r.notes)}</textarea></td>
+        <td><button class="del-btn" onclick="removeRow(${r.id})" aria-label="Remove">×</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      const ta = tr.querySelector('textarea');
+      ta.value = r.notes;
+      autoResize(ta);
+    });
+    updateSummary();
+  }
+
+  function esc(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function updateSummary() {
+    const pass  = rows.filter(r => r.status === 'pass').length;
+    const fail  = rows.filter(r => r.status === 'fail').length;
+    const total = rows.length;
+    document.getElementById('s-pass').textContent  = pass;
+    document.getElementById('s-fail').textContent  = fail;
+    document.getElementById('s-total').textContent = total;
+  }
+
+  function getFormData() {
+    return {
+      ticketId:   document.getElementById('ticket-id').value.trim()   || '(no ID)',
+      testerName: document.getElementById('tester-name').value.trim() || '(unnamed)',
+      moduleName: document.getElementById('module-name').value.trim() || '',
+      testDate:   document.getElementById('test-date').value,
+      token:      SECRET_TOKEN,
+      rows: rows.map(r => ({
+        feature: r.feature,
+        status:  r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1) : 'Untested',
+        notes:   r.notes
+      }))
+    };
+  }
+
+  function showStatus(type, msg) {
+    const el = document.getElementById('status-msg');
+    el.className = 'status-msg ' + type;
+    el.textContent = msg;
+    setTimeout(() => { el.className = 'status-msg'; }, 5000);
+  }
+
+  async function submitReport() {
+    if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      showStatus('error', 'Apps Script URL not configured yet.');
+      return;
+    }
+    if (rows.length === 0) {
+      showStatus('error', 'Add at least one feature row before submitting.');
+      return;
+    }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(getFormData())
+      });
+      const json = await res.json();
+      if (json.status === 'ok') {
+        showStatus('success', `Saved ${json.rowsWritten} row(s) to Google Sheets.`);
+      } else {
+        showStatus('error', 'Server error: ' + (json.message || 'unknown'));
+      }
+    } catch (e) {
+      showStatus('error', 'Network error — check your Apps Script URL.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Submit to Sheets';
+    }
+  }
+
+  function exportCSV() {
+    const d = getFormData();
+    const lines = [
+      `Ticket ID,Tester,Module,Date`,
+      `"${d.ticketId}","${d.testerName}","${d.moduleName}","${d.testDate}"`,
+      ``,
+      `Feature,Pass/Fail,Notes`
+    ];
+    d.rows.forEach(r => {
+      lines.push(`"${r.feature.replace(/"/g,'""')}","${r.status}","${r.notes.replace(/"/g,'""')}"`);
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${d.ticketId}-${d.testDate}.csv`;
+    a.click();
+  }
+
+  // Seed with two starter rows
+  addRow('', null, '');
+  addRow('', null, '');
+</script>
+</body>
+</html>
