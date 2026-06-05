@@ -341,6 +341,13 @@
     display: block;
   }
 
+  .status-msg.warning {
+    background: #fff6d1;
+    color: #7a5b00;
+    border: 1px solid #e6c44a;
+    display: block;
+  }
+
   .setup-notice {
     font-family: var(--mono);
     font-size: 12px;
@@ -524,14 +531,21 @@
     document.getElementById('s-total').textContent = total;
   }
 
+  function rowHasContent(r) {
+    const feature = (r.feature || '').trim();
+    const notes = (r.notes || '').trim();
+    return feature !== '' || notes !== '' || !!r.status;
+  }
+
   function getFormData() {
+    const filteredRows = rows.filter(rowHasContent);
     return {
       ticketId:   document.getElementById('ticket-id').value.trim()   || '(no ID)',
       testerName: document.getElementById('tester-name').value.trim() || '(unnamed)',
       moduleName: document.getElementById('module-name').value.trim() || '',
       testDate:   document.getElementById('test-date').value,
       token:      SECRET_TOKEN,
-      rows: rows.map(r => ({
+      rows: filteredRows.map(r => ({
         feature: r.feature,
         status:  r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1) : 'Untested',
         notes:   r.notes
@@ -551,8 +565,18 @@
       showStatus('error', 'Apps Script URL not configured yet.');
       return;
     }
-    if (rows.length === 0) {
-      showStatus('error', 'Add at least one feature row before submitting.');
+    const hasMeta = [
+      document.getElementById('ticket-id').value.trim(),
+      document.getElementById('tester-name').value.trim(),
+      document.getElementById('module-name').value.trim()
+    ].some(Boolean);
+    const meaningfulRows = rows.filter(rowHasContent).length;
+    if (!hasMeta && meaningfulRows === 0) {
+      showStatus('warning', 'Form is empty. Fill in ticket info and at least one feature row.');
+      return;
+    }
+    if (meaningfulRows === 0) {
+      showStatus('warning', 'Add at least one feature row before submitting.');
       return;
     }
 
@@ -561,14 +585,13 @@
     btn.textContent = 'Submitting…';
 
     try {
-	await fetch(APPS_SCRIPT_URL, {
-  	method: 'POST',
-  	mode: 'no-cors',
-  	headers: { 'Content-Type': 'text/plain' },
-  	body: JSON.stringify(getFormData())
-	});
-	showStatus('success', 'Submitted! Check your Google Sheet.');
-      }
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(getFormData())
+      });
+      showStatus('success', 'Submitted! Check your Google Sheet.');
     } catch (e) {
       showStatus('error', 'Network error — check your Apps Script URL.');
     } finally {
