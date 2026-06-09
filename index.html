@@ -361,6 +361,145 @@
   }
 
   .setup-notice strong { color: var(--text); }
+
+  @media (max-width: 700px) {
+    body {
+      padding: 24px 14px 56px;
+    }
+
+    .page {
+      max-width: 100%;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 20px;
+    }
+
+    .ticket-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    .meta-grid {
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .table-wrap {
+      border: none;
+      background: transparent;
+      overflow: visible;
+      margin-bottom: 0;
+    }
+
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td {
+      display: block;
+      width: 100%;
+    }
+
+    thead {
+      display: none;
+    }
+
+    tbody tr {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    tbody tr.pass-row,
+    tbody tr.fail-row {
+      background: var(--surface);
+    }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    tbody td:last-child {
+      border-bottom: none;
+      justify-content: flex-end;
+      padding-top: 4px;
+    }
+
+    tbody td::before {
+      content: attr(data-label);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      flex: 0 0 88px;
+    }
+
+    tbody td input[type=text],
+    tbody td textarea {
+      min-width: 0;
+      width: 100%;
+      font-size: 14px;
+    }
+
+    .pf-wrap {
+      justify-content: flex-start;
+      padding-top: 0;
+      width: 100%;
+    }
+
+    .pf-toggle {
+      width: 100%;
+    }
+
+    .pf-toggle button {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .del-btn {
+      margin: 0;
+      padding: 6px 8px;
+    }
+
+    .add-row-btn {
+      margin-bottom: 24px;
+    }
+
+    .summary-bar {
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .actions {
+      align-items: stretch;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .status-msg {
+      width: 100%;
+    }
+  }
 </style>
 </head>
 <body>
@@ -369,7 +508,7 @@
   <header>
     <div class="header-row">
       <h1>Issue report</h1>
-      <span class="ticket-badge" id="ticket-display">TICK-????</span>
+      <span class="ticket-badge" id="ticket-display">BC-????</span>
     </div>
   </header>
 
@@ -383,7 +522,7 @@
   <div class="meta-grid">
     <div class="field">
       <label>Ticket ID</label>
-      <input type="text" id="ticket-id" placeholder="e.g. TICK-0042" oninput="updateBadge(this.value)">
+      <select id="ticket-id" aria-label="Ticket ID"></select>
     </div>
     <div class="field">
       <label>Tester name</label>
@@ -453,7 +592,44 @@
   }
 
   function updateBadge(val) {
-    document.getElementById('ticket-display').textContent = val.trim() || 'TICK-????';
+    document.getElementById('ticket-display').textContent = (val || '').toString().trim() || 'BC-????';
+  }
+
+  // Load ticket options from the Apps Script web app
+  async function loadTicketOptions() {
+    const sel = document.getElementById('ticket-id');
+    sel.disabled = true;
+    sel.innerHTML = '<option>Loading…</option>';
+    try {
+      const res = await fetch(APPS_SCRIPT_URL + '?action=tickets');
+      const data = await res.json();
+      const list = data.tickets || [];
+      sel.innerHTML = '';
+      // placeholder
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = list.length ? 'Select a ticket' : 'No tickets available';
+      sel.appendChild(placeholder);
+      list.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+      sel.addEventListener('change', function() { updateBadge(this.value); });
+      // set badge to placeholder initially
+      updateBadge('');
+    } catch (err) {
+      sel.innerHTML = '';
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Failed to load tickets';
+      sel.appendChild(opt);
+      sel.disabled = true;
+      updateBadge('');
+      console.error('Failed to load tickets', err);
+    }
   }
 
   function addRow(feature = '', status = null, notes = '') {
@@ -492,9 +668,9 @@
       else if (r.status === 'fail') tr.className = 'fail-row';
 
       tr.innerHTML = `
-        <td><input type="text" value="${esc(r.feature)}" placeholder="Feature name"
+        <td data-label="Feature"><input type="text" value="${esc(r.feature)}" placeholder="Feature name"
           oninput="syncField(${r.id},'feature',this.value)"></td>
-        <td>
+        <td data-label="Pass / Fail">
           <div class="pf-wrap">
             <div class="pf-toggle">
               <button class="${r.status === 'pass' ? 'active-pass' : ''}"
@@ -504,10 +680,10 @@
             </div>
           </div>
         </td>
-        <td><textarea placeholder="Notes…"
+        <td data-label="Notes"><textarea placeholder="Notes…"
           oninput="syncField(${r.id},'notes',this.value);autoResize(this)"
           >${esc(r.notes)}</textarea></td>
-        <td><button class="del-btn" onclick="removeRow(${r.id})" aria-label="Remove">×</button></td>
+        <td data-label="Remove"><button class="del-btn" onclick="removeRow(${r.id})" aria-label="Remove">×</button></td>
       `;
       tbody.appendChild(tr);
 
@@ -565,8 +741,14 @@
       showStatus('error', 'Apps Script URL not configured yet.');
       return;
     }
+    const ticketSelected = document.getElementById('ticket-id').value.trim();
+    if (!ticketSelected) {
+      showStatus('warning', 'Please select a ticket from the list before submitting.');
+      return;
+    }
+
     const hasMeta = [
-      document.getElementById('ticket-id').value.trim(),
+      ticketSelected,
       document.getElementById('tester-name').value.trim(),
       document.getElementById('module-name').value.trim()
     ].some(Boolean);
@@ -621,6 +803,8 @@
   // Seed with two starter rows
   addRow('', null, '');
   addRow('', null, '');
+  // Load ticket dropdown options
+  loadTicketOptions();
 </script>
 </body>
 </html>

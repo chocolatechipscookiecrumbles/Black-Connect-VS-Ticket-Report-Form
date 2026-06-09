@@ -27,6 +27,12 @@
 var SHEET_NAME   = 'Reports';          // Tab name in your Sheet
 var SECRET_TOKEN = 'YOUR_SECRET_TOKEN_HERE'; // Must match the token in the HTML form
                                              // Set both to '' to disable auth
+// External ticket source (optional)
+// If SOURCE_SPREADSHEET_ID is set, the server will validate incoming
+// submissions against the ticket IDs read from that spreadsheet.
+var SOURCE_SPREADSHEET_ID = 'YOUR_SOURCE_SPREADSHEET_ID_HERE'; // Spreadsheet ID (not URL)
+var SOURCE_SHEET_NAME = 'Tickets'; // Tab name in the source spreadsheet
+var TICKET_COLUMN = 1; // 1 = column A
 // ─────────────────────────────────────────────────────────────
 
 
@@ -38,6 +44,14 @@ function doPost(e) {
     // ── Token check (skip if both tokens are empty strings) ──
     if (SECRET_TOKEN !== '' && payload.token !== SECRET_TOKEN) {
       return respond({ status: 'error', message: 'Unauthorized' }, 401);
+    }
+
+    // ── Optional: validate ticketId against external ticket list ──
+    if (SOURCE_SPREADSHEET_ID && payload.ticketId) {
+      var allowed = getTicketListFromExternalSpreadsheet();
+      if (allowed.length && allowed.indexOf(payload.ticketId) === -1) {
+        return respond({ status: 'error', message: 'Invalid ticketId' }, 400);
+      }
     }
 
     var sheet = getOrCreateSheet(SHEET_NAME);
@@ -116,6 +130,47 @@ function respond(data, statusCode) {
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
   return output;
+}
+
+
+// Returns ticket IDs from the external spreadsheet (simple, non-cached)
+function getTicketListFromExternalSpreadsheet() {
+  if (!SOURCE_SPREADSHEET_ID) return [];
+  try {
+    var other = SpreadsheetApp.openById(SOURCE_SPREADSHEET_ID);
+    var sheet = other.getSheetByName(SOURCE_SHEET_NAME);
+    if (!sheet) return [];
+    var last = sheet.getLastRow();
+    if (last < 2) return [];
+    var vals = sheet.getRange(2, TICKET_COLUMN, last - 1, 1).getValues();
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < vals.length; i++) {
+      var v = (vals[i][0] || '').toString().trim();
+      if (!v) continue;
+      if (!seen[v]) { seen[v] = true; out.push(v); }
+    }
+    out.sort();
+    return out;
+  } catch (err) {
+    return [];
+  }
+}
+
+// Simple GET endpoint to return the ticket list as JSON.
+// Call the web app URL with `?action=tickets` to receive { tickets: [...] }
+function doGet(e) {
+  try {
+    var action = e && e.parameter && e.parameter.action;
+    if (action === 'tickets') {
+      var list = getTicketListFromExternalSpreadsheet();
+      var output = ContentService.createTextOutput(JSON.stringify({ tickets: list })).setMimeType(ContentService.MimeType.JSON);
+      return output;
+    }
+    return respond({ status: 'ok' });
+  } catch (err) {
+    return respond({ status: 'error', message: err.message }, 500);
+  }
 }
 
 
